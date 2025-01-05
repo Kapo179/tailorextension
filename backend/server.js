@@ -11,7 +11,10 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-app.use(cors());
+app.use(cors({
+  origin: '*', // Be more specific in production
+  methods: ['GET', 'POST']
+}));
 app.use(express.json());
 
 app.post('/api/tailor', async (req, res) => {

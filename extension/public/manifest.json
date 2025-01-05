@@ -8,7 +8,7 @@
     "storage"
   ],
   "host_permissions": [
-    "http://localhost:3001/*"
+    "https://your-app-name.herokuapp.com/*"
   ],
   "action": {
     "default_popup": "index.html",
