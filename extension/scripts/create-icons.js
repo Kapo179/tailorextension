@@ -5,14 +5,9 @@ const path = require('path');
 const iconData = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 
 const sizes = [16, 48, 128];
-const iconDir = path.join(__dirname, '../public/icons');
+const publicDir = path.join(__dirname, '../public');
 
-// Create icons directory if it doesn't exist
-if (!fs.existsSync(iconDir)) {
-  fs.mkdirSync(iconDir, { recursive: true });
-}
-
-// Create icon files
+// Create icons
 sizes.forEach(size => {
-  fs.writeFileSync(path.join(iconDir, `icon${size}.png`), iconData);
+  fs.writeFileSync(path.join(publicDir, `icon${size}.png`), iconData);
 }); 

@@ -1,40 +1,40 @@
 {
-  "manifest_version": 3,
-  "name": "CV Tailor",
-  "version": "1.0.0",
-  "description": "Automatically tailors your CV to job listings using AI",
-  "permissions": [
-    "activeTab",
-    "storage"
-  ],
-  "host_permissions": [
-    "https://cv-extension-461e802f9c0c.herokuapp.com/*"
-  ],
-  "action": {
-    "default_popup": "index.html",
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
+    "manifest_version": 3,
+    "name": "CV Tailor",
+    "version": "1.0.0",
+    "description": "Automatically tailors your CV to job listings using AI",
+    "permissions": [
+      "activeTab",
+      "storage"
+    ],
+    "host_permissions": [
+      "https://cv-extension-461e802f9c0c.herokuapp.com/*"
+    ],
+    "action": {
+      "default_popup": "index.html",
+      "default_icon": {
+        "16": "icon16.png",
+        "48": "icon48.png",
+        "128": "icon128.png"
+      }
+    },
+    "content_scripts": [
+      {
+        "matches": [
+          "https://*.linkedin.com/jobs/*",
+          "https://*.indeed.com/viewjob*",
+          "https://*.glassdoor.com/job-listing/*"
+        ],
+        "js": ["contentScript.js"]
+      }
+    ],
+    "background": {
+      "service_worker": "background.js",
+      "type": "module"
+    },
+    "icons": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
     }
-  },
-  "content_scripts": [
-    {
-      "matches": [
-        "https://*.linkedin.com/jobs/*",
-        "https://*.indeed.com/viewjob*",
-        "https://*.glassdoor.com/job-listing/*"
-      ],
-      "js": ["contentScript.js"]
-    }
-  ],
-  "background": {
-    "service_worker": "background.js",
-    "type": "module"
-  },
-  "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
   }
-} 
