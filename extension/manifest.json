@@ -20,7 +20,11 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": [
+        "https://*.linkedin.com/jobs/*",
+        "https://*.indeed.com/viewjob*",
+        "https://*.glassdoor.com/job-listing/*"
+      ],
       "js": ["contentScript.js"]
     }
   ],
