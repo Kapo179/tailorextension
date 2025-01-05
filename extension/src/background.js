@@ -1,4 +1,4 @@
-const BACKEND_URL = 'https://your-app-name.herokuapp.com';
+const BACKEND_URL = 'https://youtu.be/XoijjjTAqro?si=pBJlhgNlWrbvk3r0';
 
 // Handle messages from content script and popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

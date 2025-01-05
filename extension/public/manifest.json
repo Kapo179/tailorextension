@@ -8,7 +8,7 @@
     "storage"
   ],
   "host_permissions": [
-    "https://your-app-name.herokuapp.com/*"
+    "https://youtu.be/XoijjjTAqro?si=pBJlhgNlWrbvk3r0/*"
   ],
   "action": {
     "default_popup": "index.html",
