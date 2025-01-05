@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
 
 export default defineConfig({
   plugins: [react()],
@@ -7,9 +8,12 @@ export default defineConfig({
     outDir: 'dist',
     rollupOptions: {
       input: {
-        main: 'src/main.jsx',
-        background: 'src/background.js',
-        contentScript: 'src/contentScript.js'
+        popup: resolve(__dirname, 'index.html'),
+        background: resolve(__dirname, 'src/background.js'),
+        contentScript: resolve(__dirname, 'src/contentScript.js')
+      },
+      output: {
+        entryFileNames: '[name].js'
       }
     }
   },
