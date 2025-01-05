@@ -16,5 +16,6 @@ export default defineConfig({
       },
     },
     outDir: 'dist',
+    copyPublicDir: true
   },
 }); 
