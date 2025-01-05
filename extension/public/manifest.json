@@ -8,7 +8,7 @@
     "storage"
   ],
   "host_permissions": [
-    "https://youtu.be/XoijjjTAqro?si=pBJlhgNlWrbvk3r0/*"
+    "https://cv-extension-461e802f9c0c.herokuapp.com/*"
   ],
   "action": {
     "default_popup": "index.html",
