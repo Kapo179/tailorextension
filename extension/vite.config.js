@@ -7,13 +7,27 @@ export default defineConfig({
   plugins: [
     react(),
     {
-      name: 'copy-manifest',
-      buildEnd: () => {
+      name: 'copy-manifest-and-icons',
+      closeBundle: () => {
         // Copy manifest.json to dist
         fs.copyFileSync(
           resolve(__dirname, 'manifest.json'),
           resolve(__dirname, 'dist/manifest.json')
         );
+        
+        // Ensure icons directory exists in dist
+        const distIconsDir = resolve(__dirname, 'dist/icons');
+        if (!fs.existsSync(distIconsDir)) {
+          fs.mkdirSync(distIconsDir, { recursive: true });
+        }
+        
+        // Copy icons from public to dist
+        ['16', '48', '128'].forEach(size => {
+          fs.copyFileSync(
+            resolve(__dirname, `public/icons/Icon${size}.png`),
+            resolve(__dirname, `dist/icons/Icon${size}.png`)
+          );
+        });
       }
     }
   ],

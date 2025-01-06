@@ -1,32 +1,47 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import sharp from 'sharp';
 
 async function createIcons() {
   const sizes = [16, 48, 128];
   
   try {
-    // Create icons directory in public
-    const iconsDir = path.join(process.cwd(), 'public', 'icons');
-    await fs.mkdir(iconsDir, { recursive: true });
+    const publicIconsDir = path.join(process.cwd(), 'public', 'icons');
+    const distIconsDir = path.join(process.cwd(), 'dist', 'icons');
     
-    // Create a simple 1x1 pixel PNG buffer (blue color)
-    const pngData = Buffer.from([
-      0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0x00, 0x00, 0x00, 0x0D,
-      0x49, 0x48, 0x44, 0x52, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-      0x08, 0x02, 0x00, 0x00, 0x00, 0x90, 0x77, 0x53, 0xDE, 0x00, 0x00, 0x00,
-      0x0C, 0x49, 0x44, 0x41, 0x54, 0x08, 0xD7, 0x63, 0xF8, 0xFF, 0xFF, 0x3F,
-      0x00, 0x05, 0xFE, 0x02, 0xFE, 0xDC, 0xCC, 0x59, 0xE7, 0x00, 0x00, 0x00,
-      0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE, 0x42, 0x60, 0x82
-    ]);
+    await fs.mkdir(publicIconsDir, { recursive: true });
+    await fs.mkdir(distIconsDir, { recursive: true });
     
     for (const size of sizes) {
-      await fs.writeFile(
-        path.join(iconsDir, `icon${size}.png`),
-        pngData
-      );
+      const svg = `
+        <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+          <rect width="${size}" height="${size}" fill="#0066cc"/>
+          <text 
+            x="50%" 
+            y="50%" 
+            font-family="Arial" 
+            font-size="${size * 0.5}px" 
+            fill="white" 
+            text-anchor="middle" 
+            dominant-baseline="middle"
+          >
+            CV
+          </text>
+        </svg>`;
+
+      const filename = `Icon${size}.png`;
+      
+      // Convert SVG to PNG
+      await sharp(Buffer.from(svg))
+        .png()
+        .toFile(path.join(publicIconsDir, filename));
+      
+      await sharp(Buffer.from(svg))
+        .png()
+        .toFile(path.join(distIconsDir, filename));
     }
     
-    console.log('Icons created successfully in public/icons/!');
+    console.log('Icons created successfully in public/icons/ and dist/icons/!');
   } catch (error) {
     console.error('Error creating icons:', error);
   }

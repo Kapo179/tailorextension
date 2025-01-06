@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-function Popup() {
+function Popup({ storage, jobScanner, cvTailor }) {
   const [jobDescription, setJobDescription] = useState('');
   const [tailoredCV, setTailoredCV] = useState('');
   const [loading, setLoading] = useState(false);
@@ -11,16 +11,17 @@ function Popup() {
 
   // Load saved CVs on component mount
   useEffect(() => {
-    chrome.storage.local.get(['savedCVs'], (result) => {
+    const loadSavedCVs = async () => {
+      const result = await storage.getCVs();
       if (result.savedCVs) {
         setSavedCVs(result.savedCVs);
-        // Load the first CV if available
         if (result.savedCVs.length > 0) {
           setUserCV(result.savedCVs[0].content);
           setCvName(result.savedCVs[0].name);
         }
       }
-    });
+    };
+    loadSavedCVs();
   }, []);
 
   const saveCV = async () => {
@@ -36,7 +37,7 @@ function Popup() {
     const updatedCVs = [...savedCVs, newCV];
     setSavedCVs(updatedCVs);
     
-    await chrome.storage.local.set({ savedCVs: updatedCVs });
+    await storage.saveCV(updatedCVs);
     setShowCVInput(false);
   };
 
@@ -48,7 +49,7 @@ function Popup() {
   const deleteCV = async (cvId) => {
     const updatedCVs = savedCVs.filter(cv => cv.id !== cvId);
     setSavedCVs(updatedCVs);
-    await chrome.storage.local.set({ savedCVs: updatedCVs });
+    await storage.saveCV(updatedCVs);
   };
 
   const extractJobDescription = async () => {
@@ -67,11 +68,7 @@ function Popup() {
 
     setLoading(true);
     try {
-      const response = await chrome.runtime.sendMessage({
-        action: 'TAILOR_CV',
-        jobDescription,
-        userCV
-      });
+      const response = await cvTailor(jobDescription, userCV);
       setTailoredCV(response.tailoredCV);
     } catch (error) {
       console.error('Error:', error);
