@@ -1,1 +1,0 @@
-function o(){return(document.querySelector("main")||document.body).innerText}chrome.runtime.onMessage.addListener((n,i,e)=>{if(n.action==="EXTRACT_JOB_DESCRIPTION"){const t=o();e({jobDescription:t})}});

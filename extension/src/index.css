@@ -12,9 +12,64 @@ body {
   gap: 16px;
 }
 
+.cv-management {
+  border: 1px solid #ddd;
+  padding: 16px;
+  border-radius: 4px;
+}
+
+.cv-input {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.cv-input input,
+.cv-input textarea {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.saved-cvs {
+  margin-top: 16px;
+}
+
+.cv-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid #eee;
+  margin: 4px 0;
+  border-radius: 4px;
+}
+
+.cv-item span {
+  cursor: pointer;
+}
+
+.cv-item span:hover {
+  color: #0066cc;
+}
+
 button {
   padding: 8px 16px;
   cursor: pointer;
+  background: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 4px;
+}
+
+button:disabled {
+  background: #cccccc;
+  cursor: not-allowed;
+}
+
+button:hover:not(:disabled) {
+  background: #0052a3;
 }
 
 pre {

@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/create-icons.js && vite build",
+    "prebuild": "node scripts/create-icons.js",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
