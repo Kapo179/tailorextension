@@ -1,0 +1,407 @@
+/*******************************************************
+ * track.js
+ *
+ * PURPOSE:
+ *   - Manages analytics/telemetry events sent to
+ *     an external service (Indicative) via `fetch`.
+ *   - Defines constants for various event names
+ *     and provides helper functions to record them.
+ *   - Includes logic to throttle repeated events
+ *     to avoid spam.
+ *******************************************************/
+
+// These constants map to specific events in your analytics
+export const pluginInstalled = 'plugin_installed';
+export const pluginFirstLaunch = 'plugin_first_launch';
+export const pluginLaunched = 'plugin_launched';
+export const pluginUninstall = 'uninstall_plugin ';
+export const pluginButtonClicked = 'plugin_button_clicked';
+export const pluginMenuClicked = 'plugin_menu_clicked';
+export const pluginFilledManually = 'plugin_filled_text_selection';
+export const pluginLinkedinRedirect = 'plugin_linkedin_redirect';
+
+export const ctaSavedJob = 'cta_saved_job';
+export const jobSearch = 'web_job_search';
+export const viewJob = 'web_job_view';
+
+// Additional apply-flow related events
+export const applyJobCtaClick = 'apply_job_cta_click';
+export const applyJobCtaProcess = 'apply_job_cta_process';
+export const applyFlowCtaSubmitStep1 = 'apply_flow_cta_submit_step1';
+// ... (many other events for each step of the apply flow)
+export const applyFlowCtaApplyWithFacebook = 'apply_flow_cta_apply_with_facebook';
+
+// Resume-related events
+export const uploadResume = 'success_resume_parse';
+export const startUploadResume = 'resume_start_upload_cta';
+export const failedUploadResume = 'failed_resume_parse';
+export const createResume = 'plugin_create_resume_cta';
+export const createOrUpdloadResume = 'plugin_create_or_upload_resume_cta';
+export const optimiseResume = 'plugin_optimise_resume_cta';
+export const renderedCvScan = 'plugin_rendered_cv_scan_cta';
+export const optimiseResumeListCvScan = 'plugin_cv_joblist_scan_cta';
+export const optimiseResumeCvScan = 'plugin_cv_scan_cta';
+export const optimiseResumeRes = 'plugin_cv_scan_result';
+export const optimiseResumeNoRes = 'plugin_cv_scan_no_result';
+export const showCc = 'plugin_c_triggered';
+
+// Additional events for tooltips/hints or external flows
+export const hintCtaClick = 'plugin_hint_cta_click';
+export const hintOverlayClick = 'plugin_hint_overlay_click';
+export const linkedinAuthWall = 'plugin_onboard_linkedin_authwall';
+export const onboardingView = 'extension_onboarding_view';
+export const onboardingUrlClicked = 'website_url_clicked';
+export const onboardingUrlSkipped = 'website_url_skipped';
+export const autofill = 'plugin_autofill_cta';
+
+// Error-related events
+export const pluginRequestError = 'plugin_request_error';
+export const pluginError = 'plugin_error';
+
+// API credentials + endpoint for Indicative
+const apiKeyIndicative = '9d40710f-8616-421d-a563-de27df915aaa';
+const urlIndicative = 'https://api.indicative.com/service/event';
+
+/**
+ * pushEvent
+ * -----------------------------------------------------
+ * Internal function called after an event is prepared.
+ *  - Prevents spam by checking a timestamp throttle.
+ *  - Assembles final request body (with variant info)
+ *    and sends it to the Indicative endpoint.
+ */
+function pushEvent(evtName) {
+  if (!window[evtName]) {
+    return;
+  }
+
+  const now = Date.now();
+  // If we recently fired the same event, exit
+  if (window[evtName] && now - window[evtName].timestamp < 5000) {
+    return;
+  }
+
+  window[evtName].timestamp = now;
+
+  const l = window[evtName].stacks.length;
+  const requestParams = l ? window[evtName].stacks[l - 1].requestParams : undefined;
+  window[evtName].stacks = [];
+
+  if (!requestParams || requestParams.eventUniqueId == 'UNKNOWN_USER') {
+    return;
+  }
+
+  // If experiment variants exist, attach them to the event
+  if (window.RD_VARIANTS) {
+    let variant = window.RD_VARIANTS;
+    for (const key in variant) {
+      if (
+        Object.hasOwnProperty.call(variant, key) &&
+        variant[key].value &&
+        variant[key].vars.length > 1 &&
+        variant[key].track
+      ) {
+        requestParams.properties[key] = variant[key].value;
+      }
+    }
+  }
+
+  // Attach other flags/properties
+  if (window.RD_AUTHWALL) {
+    requestParams.properties['authwall'] = 'true';
+  }
+  if (window.RD_LINKEDIN_AVATAR) {
+    requestParams.properties['linkedin_avatar'] = window.RD_LINKEDIN_AVATAR;
+  }
+  if (window.RD_LINKEDIN_URL) {
+    requestParams.properties['linkedin_url'] = window.RD_LINKEDIN_URL;
+    if (window.RD_LINKEDIN_URL_VALUE) {
+      requestParams.properties['linkedin_url_value'] = `https://www.linkedin.com/in/${window.RD_LINKEDIN_URL_VALUE}`;
+    }
+  }
+  requestParams.properties['viewport_size'] = `${window.innerWidth || 0}x${window.innerHeight || 0}`;
+  requestParams.properties['plugin_version'] = chrome.runtime.getManifest().version;
+  requestParams.properties['browser_language'] = chrome.i18n.getMessage('@@ui_locale');
+
+  // In case 'domain' wasn't explicitly set, 
+  // use current page's origin
+  if (!('domain' in requestParams.properties)) {
+    const currentUrl = new URL(window.location.href);
+    requestParams.properties['domain'] = currentUrl.origin;
+  }
+  // If user info is available, attach it
+  if (window.USER_INFOS && window.USER_INFOS.email) {
+    requestParams.properties['email'] = window.USER_INFOS.email;
+  }
+  if (window.USER_INFOS && window.USER_INFOS.gender) {
+    requestParams.properties['gender'] = window.USER_INFOS.gender;
+  }
+
+  // If in staging or test mode, just log instead of sending
+  if (window.RD_IS_STAGING_VERSION || window.RD_IS_LIVE_TEST) {
+    console.log('Tracking : ', evtName, requestParams);
+    return;
+  }
+
+  // Otherwise, send to Indicative
+  fetch(urlIndicative, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestParams),
+  }).then((response) => {
+    // optionally handle .then
+  });
+}
+
+/**
+ * trackView
+ * -----------------------------------------------------
+ * Used for "view" events (e.g., plugin_view_X).
+ *  - Creates an event object, merges in properties,
+ *  - pushes them onto a "stack" that pushEvent() will handle.
+ */
+export async function trackView(view, property = {}) {
+  let eventUniqueId = window.INDICATIVE_ID || 'UNKNOWN_USER';
+  let user_id = window.RD_USER_ID || 'UNKNOWN_USER';
+  let evtName = 'plugin_view_' + view;
+
+  if (!window[evtName]) {
+    window[evtName] = {
+      stacks: [],
+      timestamp: 0,
+    };
+  }
+
+  const now = Date.now();
+  // Basic throttling: if this event was fired in last 2s, skip
+  if (window[evtName] && now - window[evtName].timestamp < 2000) {
+    return;
+  }
+
+  // If user ID is unknown, try to retrieve it from storage
+  try {
+    if (eventUniqueId == 'UNKNOWN_USER') {
+      const _ = await chrome.storage.local.get(['userid']);
+      user_id = 'userid' in _ ? _.userid : 'UNKNOWN_USER';
+      eventUniqueId = user_id;
+    }
+  } catch (error) {}
+
+  let requestParams = {
+    apiKey: apiKeyIndicative,
+    eventName: evtName,
+    eventUniqueId: eventUniqueId,
+    properties: {
+      userId: user_id,
+    },
+  };
+
+  // Filter/Convert property values to safe strings
+  for (const key in property) {
+    if (key == 'jobDescription') continue;
+    if (Object.hasOwnProperty.call(property, key)) {
+      if (typeof property[key] == 'string') {
+        requestParams.properties[key] = property[key];
+      } else if (property[key] instanceof Date) {
+        requestParams.properties[key] = property[key].toISOString();
+      } else {
+        requestParams.properties[key] = JSON.stringify(property[key]);
+      }
+    }
+  }
+
+  // Store the event in a queue with timestamp
+  window[evtName].stacks.push({ timestamp: now, requestParams });
+  setTimeout(() => {
+    pushEvent(evtName);
+  }, 100);
+  return;
+}
+
+/**
+ * track
+ * -----------------------------------------------------
+ * Primary method for non-view events (like ctaSavedJob, 
+ * applyFlow steps, etc.). Similar logic to trackView,
+ * except it uses the direct eventName you pass in.
+ */
+export async function track(evtName = ctaSavedJob, property = {}) {
+  let user_id = window.RD_USER_ID || 'UNKNOWN_USER';
+  let eventUniqueId = window.INDICATIVE_ID || 'UNKNOWN_USER';
+
+  if (!window[evtName]) {
+    window[evtName] = {
+      stacks: [],
+      timestamp: 0,
+    };
+  }
+
+  const now = Date.now();
+
+  // Additional throttling for pluginLaunched & pluginFirstLaunch
+  if (
+    (evtName === pluginLaunched || evtName === pluginFirstLaunch) &&
+    window[evtName] &&
+    now - window[evtName].timestamp < 1000 * 3600
+  ) {
+    return;
+  }
+  if (window[evtName] && now - window[evtName].timestamp < 2000) {
+    return;
+  }
+
+  // If user ID unknown, attempt to load from storage
+  try {
+    if (eventUniqueId == 'UNKNOWN_USER') {
+      const _ = await chrome.storage.local.get(['userid']);
+      eventUniqueId = 'userid' in _ ? _.userid : 'UNKNOWN_USER';
+      user_id = 'userid' in _ ? _.userid : 'UNKNOWN_USER';
+      eventUniqueId = user_id;
+    }
+  } catch (error) {}
+
+  let requestParams = {
+    apiKey: apiKeyIndicative,
+    eventName: evtName,
+    eventUniqueId: eventUniqueId,
+    properties: { userId: user_id },
+  };
+  // Transfer only string properties (or convert objects)
+  for (const key in property) {
+    if (key == 'jobDescription') continue;
+    if (Object.hasOwnProperty.call(property, key)) {
+      if (typeof property[key] == 'string') {
+        requestParams.properties[key] = property[key];
+      } else if (property[key] instanceof Date) {
+        requestParams.properties[key] = property[key].toISOString();
+      } else {
+        requestParams.properties[key] = JSON.stringify(property[key]);
+      }
+    }
+  }
+
+  window[evtName].stacks.push({ timestamp: now, requestParams });
+  setTimeout(() => {
+    pushEvent(evtName);
+  }, 100);
+  return;
+}
+
+/**
+ * trackApplyBtn
+ * -----------------------------------------------------
+ * Specialized function to record a “Click Apply” event,
+ * storing info about whether it’s internal or external, 
+ * the job link, the job title, etc.
+ */
+export function trackApplyBtn(website, job_link = '', job_title = '', is_internal = true, external_website = '') {
+  let property = {
+    applicationLink: external_website,
+    date: new Date(),
+    domain: website,
+    internal: is_internal,
+    jobLink: job_link,
+    jobTitle: job_title,
+  };
+  track(applyJobCtaClick, property);
+  return;
+}
+
+/**
+ * addTrackApplyBtn
+ * -----------------------------------------------------
+ * A DOM utility that attaches a click event to 
+ * an “Apply” button, automatically tracking the 
+ * usage with `trackApplyBtn()`.
+ */
+function addTrackApplyBtn(infos, applyBtnCss, el = document, apply_from_card = false) {
+  let buttons;
+  if (apply_from_card) buttons = el?.querySelector(applyBtnCss);
+  else buttons = el?.querySelectorAll(applyBtnCss);
+
+  const clickHandler = () => {
+    const website = window.location.host;
+    const jobLink = infos['jobLink'];
+    const jobTitle = infos['jobTitle'];
+
+    let button;
+    if (apply_from_card) button = buttons;
+    else button = buttons[0];
+
+    const internal = !(
+      infos['jobLinkApplication']?.['internal'] == 'true' ||
+      button.getAttribute('href') ||
+      button.querySelector("use[href='#link-external-small']")
+    );
+
+    let link = infos['jobLinkApplication']?.['link'] || button.getAttribute('href') || '';
+
+    // If external, set a local storage flag so the extension 
+    // can do further logic (like open a new tab or fill a form)
+    if (internal === false) {
+      chrome.runtime.sendMessage({ action: 'apply' });
+      chrome.storage.local.set({ RD_APPLY_GPT: true });
+    }
+
+    if (!link.startsWith('https://')) link = window.location.origin + '/' + link;
+    trackApplyBtn(website, jobLink, jobTitle, internal ? 'true' : 'false', link);
+  };
+
+  if (buttons) {
+    buttons.forEach((button) => {
+      button.removeEventListener('click', clickHandler);
+      button.addEventListener('click', clickHandler);
+    });
+  }
+}
+
+/**
+ * addTrackApplyProcess
+ * -----------------------------------------------------
+ * Similar to addTrackApplyBtn but for multi-step apply flows. 
+ * Binds click => calls track() with `applyJobCtaProcess`.
+ */
+export function addTrackApplyProcess(btn, infos, eventName = applyJobCtaProcess) {
+  let property = {
+    date: new Date(),
+    domain: window.location.host,
+    jobLink: window.location.href,
+    jobTitle: infos['jobTitle'],
+    companyName: infos['companyName'],
+    step: infos['step'],
+    action: infos['action'],
+  };
+  if (infos['selected']) {
+    property['selected'] = infos['selected'];
+  }
+
+  const clickHandler = () => {
+    track(eventName, property);
+  };
+
+  btn.removeEventListener('click', clickHandler);
+  btn.addEventListener('click', clickHandler);
+}
+
+/**
+ * addTrackSearch
+ * -----------------------------------------------------
+ * Attaches a handler for job searches (like “Search” button).
+ * On click, logs job details via the `jobSearch` event.
+ */
+export function addTrackSearch(btn, infos, eventName = jobSearch) {
+  let property = {
+    date: new Date(),
+    domain: window.location.hostname,
+    job: infos?.title,
+    jobLocation: infos?.location,
+    salary: infos?.salaryMin + ' - ' + infos?.salaryMax,
+    salaryUnit: infos?.salaryUnit,
+    type: infos?.type,
+  };
+  const clickHandler = () => {
+    track(eventName, property);
+  };
+  btn.removeEventListener('click', clickHandler);
+  btn.addEventListener('click', clickHandler);
+}
