@@ -47,5 +47,6 @@ export default defineConfig({
     },
     copyPublicDir: true
   },
+  base: '',
   publicDir: 'public'
 }); 
